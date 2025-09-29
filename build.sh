@@ -1,1 +1,1 @@
-wasm-pack build --target web;
+wasm-pack build demo --target web;
