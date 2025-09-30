@@ -22,7 +22,8 @@
     <canvas id="canvas"></canvas>
     <script type="module">
       import init from "./pkg/wasm_threads.js";
-      console.log("here");
+      console.log("crossOriginIsolated:", crossOriginIsolated);
+      console.log("SharedArrayBuffer:", SharedArrayBuffer);
       init().then(() => {
         console.log("WASM Loaded");
       });

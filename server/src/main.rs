@@ -5,7 +5,9 @@ use axum::{
     http::{HeaderName, header::HeaderValue},
 };
 use axum_server::tls_rustls::RustlsConfig;
-use rcgen::{CertifiedKey, generate_simple_self_signed};
+use rcgen::{
+    BasicConstraints, CertificateParams, DnType, IsCa, KeyUsagePurpose,
+};
 use tokio::io::AsyncWriteExt;
 use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 
@@ -21,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
         ))
         .layer(SetResponseHeaderLayer::if_not_present(
             HeaderName::from_static("cross-origin-embedder-policy"),
-            HeaderValue::from_static("same-origin"),
+            HeaderValue::from_static("require-corp"),
         ));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8443));
@@ -42,11 +44,22 @@ async fn secrets() -> anyhow::Result<RustlsConfig> {
     if !std::fs::exists(cert_path).unwrap_or(false) || !std::fs::exists(key_path).unwrap_or(false) {
         tokio::fs::create_dir_all("target/secrets/").await?;
 
-        let subject_alt_names = vec!["localhost".to_string()];
-        let CertifiedKey { cert, signing_key } = generate_simple_self_signed(subject_alt_names)?;
+        let key_pair = rcgen::KeyPair::generate_for(&rcgen::PKCS_ECDSA_P256_SHA256)?;
+
+        let mut params = CertificateParams::new(vec!["localhost".to_string()])?;
+        params
+            .distinguished_name
+            .push(DnType::CommonName, "my-ca-authority");
+        params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+        params.key_usages = vec![
+            KeyUsagePurpose::KeyCertSign, // The critical extension for a CA
+            KeyUsagePurpose::CrlSign,
+        ];
+
+        let cert = params.self_signed(&key_pair)?;
 
         let cert_pem = cert.pem();
-        let key_pem = signing_key.serialize_pem();
+        let key_pem = key_pair.serialize_pem();
 
         let mut cert_file = tokio::fs::File::create(cert_path).await?;
         cert_file.write_all(cert_pem.as_bytes()).await?;
