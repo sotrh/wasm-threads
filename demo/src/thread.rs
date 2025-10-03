@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 
+/// Wrapper around a web worker
 pub struct Handle {
     #[allow(dead_code)]
     worker: web_sys::Worker,
