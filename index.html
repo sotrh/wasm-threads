@@ -20,19 +20,19 @@
 
   <body id="wasm-example">
     <canvas id="canvas"></canvas>
-    <script type="module">
+    <!-- <script type="module">
       import init from "./pkg/wasm_threads.js";
       console.log("crossOriginIsolated:", crossOriginIsolated);
       console.log("SharedArrayBuffer:", SharedArrayBuffer);
       init().then(() => {
         console.log("WASM Loaded");
       });
-    </script>
-    <!-- <script src="pkg/wasm_threads.js"></script>
+    </script> -->
+    <script src="pkg/wasm_threads.js"></script>
     <script>
       wasm_bindgen()
         .then(() => console.info("Wasm Loaded"))
         .catch(console.error);
-    </script> -->
+    </script>
   </body>
 </html>

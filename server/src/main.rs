@@ -4,11 +4,6 @@ use axum::{
     Router,
     http::{HeaderName, header::HeaderValue},
 };
-use axum_server::tls_rustls::RustlsConfig;
-use rcgen::{
-    BasicConstraints, CertificateParams, DnType, IsCa, KeyUsagePurpose,
-};
-use tokio::io::AsyncWriteExt;
 use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 
 #[tokio::main]
@@ -37,20 +32,23 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn secrets() -> anyhow::Result<RustlsConfig> {
+async fn secrets() -> anyhow::Result<axum_server::tls_rustls::RustlsConfig> {
+    use rcgen::{CertificateParams, DnType, KeyPair, KeyUsagePurpose};
+    use tokio::io::AsyncWriteExt;
+
     let cert_path = "target/secrets/cert.pem";
     let key_path = "target/secrets/key.pem";
 
     if !std::fs::exists(cert_path).unwrap_or(false) || !std::fs::exists(key_path).unwrap_or(false) {
         tokio::fs::create_dir_all("target/secrets/").await?;
 
-        let key_pair = rcgen::KeyPair::generate_for(&rcgen::PKCS_ECDSA_P256_SHA256)?;
+        let key_pair = KeyPair::generate_for(&rcgen::PKCS_ECDSA_P256_SHA256)?;
 
         let mut params = CertificateParams::new(vec!["localhost".to_string()])?;
         params
             .distinguished_name
             .push(DnType::CommonName, "my-ca-authority");
-        params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+        params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
         params.key_usages = vec![
             KeyUsagePurpose::KeyCertSign, // The critical extension for a CA
             KeyUsagePurpose::CrlSign,
@@ -70,5 +68,5 @@ async fn secrets() -> anyhow::Result<RustlsConfig> {
         println!("Generated key.pem");
     }
 
-    Ok(RustlsConfig::from_pem_file(cert_path, key_path).await?)
+    Ok(axum_server::tls_rustls::RustlsConfig::from_pem_file(cert_path, key_path).await?)
 }

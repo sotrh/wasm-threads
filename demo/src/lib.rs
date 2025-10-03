@@ -12,21 +12,12 @@ fn start() {
     console_error_panic_hook::set_once();
     wasm_tracing::set_as_global_default();
 
-    let handle1 = Rc::new(spawn(|| {
+    let _handle1 = spawn(|| {
         tracing::info!("From a thread!");
-    }));
+    });
 
-    let handle2 = Rc::new(spawn(|| {
+    let _handle2 = spawn(|| {
         tracing::info!("From a different thread!");
-    }));
-
-    wasm_bindgen_futures::spawn_local(async move {
-        sleep(5000).await;
-
-        tracing::info!("Dropping handles");
-
-        drop(handle1);
-        drop(handle2);
     });
 }
 

@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 
 pub struct Handle {
+    #[allow(dead_code)]
     worker: web_sys::Worker,
 }
 
@@ -26,28 +27,7 @@ pub fn worker_entry_point(ptr: u32) {
 }
 
 fn spawn_web_impl(work: Work) -> Handle {
-    // Get a url to create the worker
-    let script_bytes = include_str!("worker.js").as_bytes();
-    let script_array = js_sys::Array::from_iter([js_sys::Uint8Array::from(script_bytes)]);
-
-    let blob_properties = web_sys::BlobPropertyBag::new();
-    blob_properties.set_type("application/javascript");
-
-    let blob =
-        web_sys::Blob::new_with_u8_array_sequence_and_options(&script_array, &blob_properties)
-            .unwrap();
-
-    let script_url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
-
-    // tracing::info!("script: {")
-    tracing::info!("script_url: {script_url}");
-
-    let worker_options = web_sys::WorkerOptions::new();
-    worker_options.set_type(web_sys::WorkerType::Module);
-
-    let worker = web_sys::Worker::new_with_options(&script_url, &worker_options).unwrap();
-
-    
+    let worker = web_sys::Worker::new("worker.js").unwrap();
 
     // Send the current WASM module and memory to the worker
     let array = js_sys::Array::new();
